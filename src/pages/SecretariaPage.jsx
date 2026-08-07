@@ -7,6 +7,7 @@ import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { useProfesionales } from '../hooks/useProfesionales'
 import { calcularEdad } from '../utils/age'
+import { generarConstanciaPDF } from '../utils/pdfConstancia'
 import { MOTIVOS_CONSULTA, ORIGENES_PACIENTE } from '../utils/constants'
 
 const PACIENTE_VACIO = {
@@ -33,11 +34,17 @@ export default function SecretariaPage() {
 
   const [recientes, setRecientes] = useState([])
   const [eliminandoId, setEliminandoId] = useState(null)
+  const [detalleSeleccionado, setDetalleSeleccionado] = useState(null)
 
   useEffect(() => {
     const q = query(collectionGroup(db, 'visitas'), orderBy('fechaCreacion', 'desc'), limit(15))
     const unsub = onSnapshot(q, (snap) => {
-      setRecientes(snap.docs.map((d) => ({ id: d.id, ref: d.ref, ...d.data() })))
+      const datos = snap.docs.map((d) => ({ id: d.id, ref: d.ref, ...d.data() }))
+      setRecientes(datos)
+      setDetalleSeleccionado((actual) => {
+        if (!actual) return actual
+        return datos.find((v) => v.id === actual.id) || actual
+      })
     }, (err) => {
       console.error('Error cargando consultas recientes:', err)
     })
@@ -147,6 +154,20 @@ export default function SecretariaPage() {
 
   const edad = calcularEdad(paciente.fechaNacimiento)
 
+  if (detalleSeleccionado) {
+    return (
+      <DetalleConsultaSecretaria
+        visita={detalleSeleccionado}
+        onVolver={() => setDetalleSeleccionado(null)}
+        onEliminar={async () => {
+          await eliminarConsulta(detalleSeleccionado)
+          setDetalleSeleccionado(null)
+        }}
+        eliminando={eliminandoId === detalleSeleccionado.id}
+      />
+    )
+  }
+
   return (
     <div className="page">
       <div className="page-header">
@@ -247,7 +268,7 @@ export default function SecretariaPage() {
       </div>
       {recientes.length === 0 && <div className="empty-state">Todavía no se coordinaron consultas.</div>}
       {recientes.map((v) => (
-        <div key={v.id} className="list-item" style={{ cursor: 'default' }}>
+        <div key={v.id} className="list-item" onClick={() => setDetalleSeleccionado(v)}>
           <div className="li-main">
             <strong>{v.pacienteNombre}</strong>
             <div>{v.motivoConsulta} · Derivado a {v.profesionalNombre} · {v.fechaHoraVisita?.replace('T', ' ')}</div>
@@ -260,7 +281,7 @@ export default function SecretariaPage() {
               type="button"
               className="btn btn-outline"
               style={{ padding: '6px 10px', fontSize: '0.8rem', color: 'var(--danger)', borderColor: 'var(--danger)' }}
-              onClick={() => eliminarConsulta(v)}
+              onClick={(e) => { e.stopPropagation(); eliminarConsulta(v) }}
               disabled={eliminandoId === v.id}
             >
               {eliminandoId === v.id ? 'Eliminando...' : 'Eliminar'}
@@ -268,6 +289,87 @@ export default function SecretariaPage() {
           </div>
         </div>
       ))}
+    </div>
+  )
+}
+
+function DetalleConsultaSecretaria({ visita, onVolver, onEliminar, eliminando }) {
+  const edad = calcularEdad(visita.pacienteFechaNacimiento)
+
+  let destinoTexto = visita.destinoPaciente || ''
+  if (visita.destinoPaciente === 'Coordinar nueva visita en Domicilio' && visita.destinoDias) {
+    destinoTexto += ` (control en ${visita.destinoDias} días)`
+  }
+  if (visita.destinoPaciente === 'Derivación a Clínica' && visita.destinoDerivacion?.length) {
+    destinoTexto += `: ${visita.destinoDerivacion.join(', ')}`
+  }
+
+  return (
+    <div className="page">
+      <button className="btn btn-outline" onClick={onVolver} style={{ marginBottom: 16 }}>&larr; Volver al listado</button>
+
+      <div className="card">
+        <div className="page-header" style={{ marginBottom: 10 }}>
+          <h1 style={{ fontSize: '1.3rem' }}>{visita.pacienteNombre}</h1>
+          <span className={`badge ${visita.estado === 'realizada' ? 'badge-done' : 'badge-pending'}`} style={{ marginTop: 6 }}>
+            {visita.estado === 'realizada' ? 'Realizada' : 'Pendiente'}
+          </span>
+        </div>
+
+        <div className="field-row">
+          <div><strong>DNI:</strong> {visita.pacienteDni}</div>
+          {edad !== null && !Number.isNaN(edad) && <div><strong>Edad:</strong> {edad} años</div>}
+        </div>
+        <div className="field-row">
+          <div><strong>Domicilio:</strong> {visita.pacienteDomicilio}</div>
+          <div><strong>Teléfono:</strong> {visita.pacienteTelefono}</div>
+        </div>
+        {visita.pacienteOrigen && <div style={{ marginTop: 8 }}><strong>Origen:</strong> {visita.pacienteOrigen}</div>}
+      </div>
+
+      <div className="card">
+        <h2 style={{ fontSize: '1.05rem', marginBottom: 14 }}>Visita coordinada</h2>
+        <div className="field-row">
+          <div><strong>Fecha y hora:</strong> {visita.fechaHoraVisita?.replace('T', ' ')}</div>
+          <div><strong>Profesional:</strong> {visita.profesionalNombre}</div>
+        </div>
+        <div style={{ marginTop: 8 }}>
+          <strong>Motivo:</strong> {visita.motivoConsulta}
+          {visita.motivoObservacion ? ` — ${visita.motivoObservacion}` : ''}
+        </div>
+      </div>
+
+      <div className="card">
+        <h2 style={{ fontSize: '1.05rem', marginBottom: 14 }}>Resultado cargado por el Profesional</h2>
+        {visita.estado === 'realizada' ? (
+          <>
+            <div>
+              <strong>Resultado:</strong> {visita.resultadoVisita}
+              {visita.resultadoObservacion ? ` — ${visita.resultadoObservacion}` : ''}
+            </div>
+            <div style={{ marginTop: 8 }}><strong>Destino del paciente:</strong> {destinoTexto}</div>
+          </>
+        ) : (
+          <div className="hint">El profesional todavía no realizó esta visita.</div>
+        )}
+      </div>
+
+      <div className="action-row">
+        {visita.estado === 'realizada' && (
+          <button type="button" className="btn btn-primary" onClick={() => generarConstanciaPDF(visita)}>
+            Descargar Constancia (PDF)
+          </button>
+        )}
+        <button
+          type="button"
+          className="btn btn-outline"
+          style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}
+          onClick={onEliminar}
+          disabled={eliminando}
+        >
+          {eliminando ? 'Eliminando...' : 'Eliminar consulta'}
+        </button>
+      </div>
     </div>
   )
 }

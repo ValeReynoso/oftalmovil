@@ -4,6 +4,7 @@ import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
 import { calcularEdad } from '../utils/age'
 import { linkGoogleCalendar, linkGoogleMaps, linkWhatsapp, linkLlamada } from '../utils/links'
+import { generarConstanciaPDF } from '../utils/pdfConstancia'
 import { RESULTADOS_VISITA, DESTINOS_PACIENTE, OPCIONES_DERIVACION_CLINICA } from '../utils/constants'
 
 export default function ProfesionalPage() {
@@ -149,6 +150,11 @@ function DetalleVisita({ visita, onVolver }) {
           <a className="btn btn-outline" target="_blank" rel="noreferrer" href={linkGoogleMaps(visita.pacienteDomicilio)}>Abrir en Maps</a>
           <a className="btn btn-outline" target="_blank" rel="noreferrer" href={linkWhatsapp(visita.pacienteTelefono)}>WhatsApp</a>
           <a className="btn btn-outline" href={linkLlamada(visita.pacienteTelefono)}>Llamar</a>
+          {visita.estado === 'realizada' && (
+            <button type="button" className="btn btn-outline" onClick={() => generarConstanciaPDF(visita)}>
+              Descargar Constancia (PDF)
+            </button>
+          )}
         </div>
       </div>
 
