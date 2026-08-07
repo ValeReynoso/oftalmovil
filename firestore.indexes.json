@@ -1,0 +1,26 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "visitas",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "profesionalUid", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "visitas",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "fechaCreacion", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "visitas",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "fechaHoraVisita", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

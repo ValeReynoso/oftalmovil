@@ -1,0 +1,46 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function estaLogueado() {
+      return request.auth != null;
+    }
+
+    function rolDe(uid) {
+      return get(/databases/$(database)/documents/usuarios/$(uid)).data.rol;
+    }
+
+    function miRol() {
+      return rolDe(request.auth.uid);
+    }
+
+    // Cada usuario puede leer su propia ficha de /usuarios (para saber su rol).
+    // Solo Gerencia puede crear/editar/listar usuarios (alta de cuentas de secretaría/profesionales).
+    match /usuarios/{uid} {
+      allow read: if estaLogueado() && (request.auth.uid == uid || miRol() == 'gerencia');
+      allow list: if estaLogueado() && miRol() == 'profesional'; // para armar el combo de "derivar a profesional"
+      allow write: if estaLogueado() && miRol() == 'gerencia';
+    }
+
+    match /pacientes/{dni} {
+      allow read: if estaLogueado() && miRol() in ['secretaria', 'gerencia', 'profesional'];
+      allow write: if estaLogueado() && miRol() == 'secretaria';
+
+      match /visitas/{visitaId} {
+        allow read: if estaLogueado() && (
+          miRol() == 'secretaria' ||
+          miRol() == 'gerencia' ||
+          (miRol() == 'profesional' && resource.data.profesionalUid == request.auth.uid)
+        );
+        allow create: if estaLogueado() && miRol() == 'secretaria';
+        // El profesional solo puede actualizar el resultado de SU PROPIA visita,
+        // y solo puede tocar los campos de resultado (no reasignarse ni borrar datos del paciente).
+        allow update: if estaLogueado() && miRol() == 'profesional'
+          && resource.data.profesionalUid == request.auth.uid
+          && request.resource.data.profesionalUid == resource.data.profesionalUid;
+        allow delete: if false;
+      }
+    }
+  }
+}
