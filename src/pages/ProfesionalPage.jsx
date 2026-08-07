@@ -185,12 +185,27 @@ function DetalleVisita({ visita, onVolver }) {
         {destino === 'Derivación a Clínica' && (
           <div className="field">
             <label>Motivo de derivación</label>
-            {OPCIONES_DERIVACION_CLINICA.map((op) => (
-              <label className="tag-check" key={op}>
-                <input type="checkbox" checked={derivacion.includes(op)} onChange={() => toggleDerivacion(op)} />
-                {op}
-              </label>
-            ))}
+            <div className="option-tiles">
+              {OPCIONES_DERIVACION_CLINICA.map((op) => {
+                const seleccionado = derivacion.includes(op)
+                return (
+                  <label className={`option-tile ${seleccionado ? 'is-selected' : ''}`} key={op}>
+                    <input
+                      type="checkbox"
+                      checked={seleccionado}
+                      onChange={() => toggleDerivacion(op)}
+                      style={{ display: 'none' }}
+                    />
+                    <span className="option-tile-check">
+                      <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+                        <path d="M1 5L4.5 8.5L11 1.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                    <span className="option-tile-label">{op}</span>
+                  </label>
+                )
+              })}
+            </div>
           </div>
         )}
 

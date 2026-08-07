@@ -39,7 +39,7 @@ service cloud.firestore {
         allow update: if estaLogueado() && miRol() == 'profesional'
           && resource.data.profesionalUid == request.auth.uid
           && request.resource.data.profesionalUid == resource.data.profesionalUid;
-        allow delete: if false;
+        allow delete: if estaLogueado() && miRol() == 'secretaria';
       }
     }
   }

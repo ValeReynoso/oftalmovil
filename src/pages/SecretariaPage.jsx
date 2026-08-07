@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   doc, getDoc, setDoc, addDoc, collection, serverTimestamp,
-  collectionGroup, query, orderBy, limit, onSnapshot,
+  collectionGroup, query, orderBy, limit, onSnapshot, deleteDoc,
 } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
@@ -32,16 +32,33 @@ export default function SecretariaPage() {
   const [errorMsg, setErrorMsg] = useState('')
 
   const [recientes, setRecientes] = useState([])
+  const [eliminandoId, setEliminandoId] = useState(null)
 
   useEffect(() => {
     const q = query(collectionGroup(db, 'visitas'), orderBy('fechaCreacion', 'desc'), limit(15))
     const unsub = onSnapshot(q, (snap) => {
-      setRecientes(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+      setRecientes(snap.docs.map((d) => ({ id: d.id, ref: d.ref, ...d.data() })))
     }, (err) => {
       console.error('Error cargando consultas recientes:', err)
     })
     return unsub
   }, [])
+
+  async function eliminarConsulta(v) {
+    const confirmar = window.confirm(
+      `¿Eliminar la consulta de ${v.pacienteNombre} (${v.fechaHoraVisita?.replace('T', ' ')})? Esta acción no se puede deshacer.`
+    )
+    if (!confirmar) return
+    setEliminandoId(v.id)
+    try {
+      await deleteDoc(v.ref)
+    } catch (err) {
+      console.error(err)
+      alert('No se pudo eliminar la consulta. Probá de nuevo.')
+    } finally {
+      setEliminandoId(null)
+    }
+  }
 
   async function buscarPaciente() {
     if (!dniBusqueda.trim()) return
@@ -235,9 +252,20 @@ export default function SecretariaPage() {
             <strong>{v.pacienteNombre}</strong>
             <div>{v.motivoConsulta} · Derivado a {v.profesionalNombre} · {v.fechaHoraVisita?.replace('T', ' ')}</div>
           </div>
-          <span className={`badge ${v.estado === 'realizada' ? 'badge-done' : 'badge-pending'}`}>
-            {v.estado === 'realizada' ? 'Realizada' : 'Pendiente'}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span className={`badge ${v.estado === 'realizada' ? 'badge-done' : 'badge-pending'}`}>
+              {v.estado === 'realizada' ? 'Realizada' : 'Pendiente'}
+            </span>
+            <button
+              type="button"
+              className="btn btn-outline"
+              style={{ padding: '6px 10px', fontSize: '0.8rem', color: 'var(--danger)', borderColor: 'var(--danger)' }}
+              onClick={() => eliminarConsulta(v)}
+              disabled={eliminandoId === v.id}
+            >
+              {eliminandoId === v.id ? 'Eliminando...' : 'Eliminar'}
+            </button>
+          </div>
         </div>
       ))}
     </div>

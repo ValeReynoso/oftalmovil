@@ -1,26 +1,29 @@
 {
-  "indexes": [
+  "indexes": [],
+  "fieldOverrides": [
     {
       "collectionGroup": "visitas",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "profesionalUid", "order": "ASCENDING" }
+      "fieldPath": "fechaCreacion",
+      "indexes": [
+        { "order": "DESCENDING", "queryScope": "COLLECTION_GROUP" },
+        { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" }
       ]
     },
     {
       "collectionGroup": "visitas",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "fechaCreacion", "order": "DESCENDING" }
+      "fieldPath": "profesionalUid",
+      "indexes": [
+        { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" },
+        { "order": "DESCENDING", "queryScope": "COLLECTION_GROUP" }
       ]
     },
     {
       "collectionGroup": "visitas",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "fechaHoraVisita", "order": "DESCENDING" }
+      "fieldPath": "fechaHoraVisita",
+      "indexes": [
+        { "order": "DESCENDING", "queryScope": "COLLECTION_GROUP" },
+        { "order": "ASCENDING", "queryScope": "COLLECTION_GROUP" }
       ]
     }
-  ],
-  "fieldOverrides": []
+  ]
 }
