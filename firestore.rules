@@ -19,7 +19,7 @@ service cloud.firestore {
     // Solo Gerencia puede crear/editar/listar usuarios (alta de cuentas de secretaría/profesionales).
     match /usuarios/{uid} {
       allow read: if estaLogueado() && (request.auth.uid == uid || miRol() == 'gerencia');
-      allow list: if estaLogueado() && miRol() == 'profesional'; // para armar el combo de "derivar a profesional"
+      allow list: if estaLogueado() && miRol() in ['secretaria', 'gerencia']; // para armar el combo de "derivar a profesional"
       allow write: if estaLogueado() && miRol() == 'gerencia';
     }
 
