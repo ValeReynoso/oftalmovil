@@ -37,7 +37,9 @@ export default function SecretariaPage() {
     const q = query(collectionGroup(db, 'visitas'), orderBy('fechaCreacion', 'desc'), limit(15))
     const unsub = onSnapshot(q, (snap) => {
       setRecientes(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-    }, () => {})
+    }, (err) => {
+      console.error('Error cargando consultas recientes:', err)
+    })
     return unsub
   }, [])
 

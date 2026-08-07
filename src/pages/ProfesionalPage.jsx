@@ -23,6 +23,8 @@ export default function ProfesionalPage() {
         const actualizada = datos.find((v) => v.id === seleccionada.id)
         if (actualizada) setSeleccionada(actualizada)
       }
+    }, (err) => {
+      console.error('Error cargando mis consultas:', err)
     })
     return unsub
     // eslint-disable-next-line react-hooks/exhaustive-deps
