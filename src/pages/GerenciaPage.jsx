@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { collectionGroup, onSnapshot, query, orderBy } from 'firebase/firestore'
 import { db } from '../firebase'
 
 export default function GerenciaPage() {
+  const navigate = useNavigate()
   const [visitas, setVisitas] = useState([])
   const [filtroProfesional, setFiltroProfesional] = useState('')
   const [filtroEstado, setFiltroEstado] = useState('')
@@ -88,7 +90,14 @@ export default function GerenciaPage() {
       {filtradas.map((v) => (
         <div key={v.id} className="list-item" style={{ cursor: 'default' }}>
           <div className="li-main">
-            <strong>{v.pacienteNombre}</strong>
+            <button
+              type="button"
+              className="patient-name-link"
+              onClick={() => navigate(`/pacientes/${v.pacienteDni}`)}
+              title="Ver historia clínica completa de este paciente"
+            >
+              {v.pacienteNombre}
+            </button>
             <div>
               {v.motivoConsulta} · Prof: {v.profesionalNombre} · {v.fechaHoraVisita?.replace('T', ' ')}
               {v.estado === 'realizada' && v.resultadoVisita ? ` · ${v.resultadoVisita}` : ''}

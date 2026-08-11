@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   doc, getDoc, setDoc, addDoc, collection, serverTimestamp,
   collectionGroup, query, orderBy, limit, onSnapshot, deleteDoc,
@@ -17,6 +18,7 @@ const PACIENTE_VACIO = {
 export default function SecretariaPage() {
   const { usuario } = useAuth()
   const { profesionales } = useProfesionales()
+  const navigate = useNavigate()
 
   const [dniBusqueda, setDniBusqueda] = useState('')
   const [buscando, setBuscando] = useState(false)
@@ -270,7 +272,14 @@ export default function SecretariaPage() {
       {recientes.map((v) => (
         <div key={v.id} className="list-item" onClick={() => setDetalleSeleccionado(v)}>
           <div className="li-main">
-            <strong>{v.pacienteNombre}</strong>
+            <button
+              type="button"
+              className="patient-name-link"
+              onClick={(e) => { e.stopPropagation(); navigate(`/pacientes/${v.pacienteDni}`) }}
+              title="Ver historia clínica completa de este paciente"
+            >
+              {v.pacienteNombre}
+            </button>
             <div>{v.motivoConsulta} · Derivado a {v.profesionalNombre} · {v.fechaHoraVisita?.replace('T', ' ')}</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -294,6 +303,7 @@ export default function SecretariaPage() {
 }
 
 function DetalleConsultaSecretaria({ visita, onVolver, onEliminar, eliminando }) {
+  const navigate = useNavigate()
   const edad = calcularEdad(visita.pacienteFechaNacimiento)
 
   let destinoTexto = visita.destinoPaciente || ''
@@ -355,6 +365,9 @@ function DetalleConsultaSecretaria({ visita, onVolver, onEliminar, eliminando })
       </div>
 
       <div className="action-row">
+        <button type="button" className="btn btn-outline" onClick={() => navigate(`/pacientes/${visita.pacienteDni}`)}>
+          Ver historia clínica completa de este paciente
+        </button>
         {visita.estado === 'realizada' && (
           <button type="button" className="btn btn-primary" onClick={() => generarConstanciaPDF(visita)}>
             Descargar Constancia (PDF)
