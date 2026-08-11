@@ -6,6 +6,7 @@ import Login from './pages/Login'
 import SecretariaPage from './pages/SecretariaPage'
 import ProfesionalPage from './pages/ProfesionalPage'
 import GerenciaPage from './pages/GerenciaPage'
+import HistoriaClinicaPage from './pages/HistoriaClinicaPage'
 
 function Shell({ children }) {
   return (
@@ -58,6 +59,13 @@ export default function App() {
             <Shell>
               <ProtectedRoute rolesPermitidos={['gerencia']}>
                 <GerenciaPage />
+              </ProtectedRoute>
+            </Shell>
+          } />
+          <Route path="/pacientes/:dni" element={
+            <Shell>
+              <ProtectedRoute rolesPermitidos={['secretaria', 'profesional', 'gerencia']}>
+                <HistoriaClinicaPage />
               </ProtectedRoute>
             </Shell>
           } />

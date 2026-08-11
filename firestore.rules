@@ -30,12 +30,15 @@ service cloud.firestore {
     // declaradas con el wildcard recursivo {path=**}: una regla anidada bajo
     // /pacientes/{dni}/visitas/{visitaId} NO se aplica a collectionGroup(),
     // sólo a lecturas directas de la subcolección. Por eso va acá afuera.
+    //
+    // La lectura se habilita para los 3 roles sin restricción por
+    // profesionalUid: la vista de Historia Clínica requiere que cualquier
+    // miembro autorizado del personal (secretaria, profesional o gerencia)
+    // pueda ver el historial completo de un paciente, incluidas las visitas
+    // atendidas por otros profesionales. Escribir (create/update/delete)
+    // sigue restringido como antes.
     match /{path=**}/visitas/{visitaId} {
-      allow read: if estaLogueado() && (
-        miRol() == 'secretaria' ||
-        miRol() == 'gerencia' ||
-        (miRol() == 'profesional' && resource.data.profesionalUid == request.auth.uid)
-      );
+      allow read: if estaLogueado() && miRol() in ['secretaria', 'gerencia', 'profesional'];
       allow create: if estaLogueado() && miRol() == 'secretaria';
       allow update: if estaLogueado() && miRol() == 'profesional'
         && resource.data.profesionalUid == request.auth.uid

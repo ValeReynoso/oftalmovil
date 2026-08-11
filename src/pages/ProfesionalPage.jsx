@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { collectionGroup, query, where, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useAuth } from '../context/AuthContext'
@@ -64,10 +65,18 @@ export default function ProfesionalPage() {
 }
 
 function ItemVisita({ v, onClick }) {
+  const navigate = useNavigate()
   return (
     <div className="list-item" onClick={onClick}>
       <div className="li-main">
-        <strong>{v.pacienteNombre}</strong>
+        <button
+          type="button"
+          className="patient-name-link"
+          onClick={(e) => { e.stopPropagation(); navigate(`/pacientes/${v.pacienteDni}`) }}
+          title="Ver historia clínica completa de este paciente"
+        >
+          {v.pacienteNombre}
+        </button>
         <div>{v.motivoConsulta} · {v.fechaHoraVisita?.replace('T', ' ')}</div>
       </div>
       <span className={`badge ${v.estado === 'realizada' ? 'badge-done' : 'badge-pending'}`}>
@@ -78,6 +87,7 @@ function ItemVisita({ v, onClick }) {
 }
 
 function DetalleVisita({ visita, onVolver }) {
+  const navigate = useNavigate()
   const [resultado, setResultado] = useState(visita.resultadoVisita || RESULTADOS_VISITA[0])
   const [resultadoObs, setResultadoObs] = useState(visita.resultadoObservacion || '')
   const [destino, setDestino] = useState(visita.destinoPaciente || DESTINOS_PACIENTE[0])
@@ -150,6 +160,9 @@ function DetalleVisita({ visita, onVolver }) {
           <a className="btn btn-outline" target="_blank" rel="noreferrer" href={linkGoogleMaps(visita.pacienteDomicilio)}>Abrir en Maps</a>
           <a className="btn btn-outline" target="_blank" rel="noreferrer" href={linkWhatsapp(visita.pacienteTelefono)}>WhatsApp</a>
           <a className="btn btn-outline" href={linkLlamada(visita.pacienteTelefono)}>Llamar</a>
+          <button type="button" className="btn btn-outline" onClick={() => navigate(`/pacientes/${visita.pacienteDni}`)}>
+            Ver historia clínica completa de este paciente
+          </button>
           {visita.estado === 'realizada' && (
             <button type="button" className="btn btn-outline" onClick={() => generarConstanciaPDF(visita)}>
               Descargar Constancia (PDF)

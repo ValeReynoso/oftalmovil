@@ -121,6 +121,13 @@ a { color: var(--violet); }
 .list-item .li-main strong { font-size: 1.02rem; }
 .list-item .li-main div { color: var(--text-muted); font-size: 0.85rem; margin-top: 3px; }
 
+.patient-name-link {
+  background: none; border: none; padding: 0; margin: 0;
+  font: inherit; font-weight: 700; font-size: 1.02rem; color: var(--navy);
+  cursor: pointer; text-align: left;
+}
+.patient-name-link:hover { color: var(--violet); text-decoration: underline; }
+
 .empty-state { text-align: center; padding: 50px 20px; color: var(--text-muted); }
 
 .error-text { color: var(--danger); font-size: 0.88rem; margin-top: 8px; }
