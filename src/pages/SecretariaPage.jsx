@@ -10,6 +10,7 @@ import { useProfesionales } from '../hooks/useProfesionales'
 import { calcularEdad } from '../utils/age'
 import { generarConstanciaPDF } from '../utils/pdfConstancia'
 import { MOTIVOS_CONSULTA, ORIGENES_PACIENTE } from '../utils/constants'
+import PuntualidadInfo from '../components/PuntualidadInfo'
 
 const PACIENTE_VACIO = {
   nombreApellido: '', dni: '', fechaNacimiento: '', domicilio: '', telefono: '', origenPaciente: ORIGENES_PACIENTE[0],
@@ -347,6 +348,7 @@ function DetalleConsultaSecretaria({ visita, onVolver, onEliminar, eliminando })
           <strong>Motivo:</strong> {visita.motivoConsulta}
           {visita.motivoObservacion ? ` — ${visita.motivoObservacion}` : ''}
         </div>
+        <PuntualidadInfo visita={visita} />
       </div>
 
       <div className="card">
