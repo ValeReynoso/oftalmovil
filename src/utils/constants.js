@@ -34,3 +34,35 @@ export const OPCIONES_DERIVACION_CLINICA = [
   'Posible Cirugía',
   'Seguimiento Telefónico del Profesional',
 ]
+
+export const TIPOS_INSTITUCION = [
+  'Residencia geriátrica',
+  'Centro de día',
+  'Residencia / neurogeriatría',
+  'Otro',
+]
+
+export const PRIORIDADES_INSTITUCION = ['A', 'B']
+
+export const ESTADOS_INSTITUCION = [
+  'Sin contactar',
+  'Contactado',
+  'Interesado',
+  'No interesado por ahora',
+  'A reconsiderar más adelante',
+  'Jornada coordinada',
+  'Derivación a consulta individual',
+]
+
+export const ESTADOS_INSTITUCION_POSITIVOS = ['Interesado', 'Jornada coordinada', 'Derivación a consulta individual']
+
+export const TIPOS_CONTACTO = ['Llamada', 'WhatsApp', 'Mail', 'Visita presencial']
+
+export const RESULTADOS_CONTACTO = [
+  'Sin respuesta',
+  'Interesado',
+  'No interesado por ahora',
+  'A reconsiderar más adelante',
+  'Jornada coordinada',
+  'Derivación a consulta individual',
+]

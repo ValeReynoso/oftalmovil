@@ -45,5 +45,22 @@ service cloud.firestore {
         && request.resource.data.profesionalUid == resource.data.profesionalUid;
       allow delete: if estaLogueado() && miRol() == 'secretaria';
     }
+
+    match /instituciones/{institucionId} {
+      allow read: if estaLogueado() && miRol() in ['captacion', 'gerencia'];
+      allow create, update: if estaLogueado() && miRol() == 'captacion';
+    }
+
+    // Mismo motivo que con 'visitas': para que Gerencia pueda leer los
+    // contactos de todas las instituciones con collectionGroup(db, 'contactos')
+    // esta regla tiene que declararse acá afuera con el wildcard recursivo.
+    //
+    // Los contactos son de solo lectura una vez creados (no hay allow update
+    // ni allow delete): si hay que corregir un error se carga un contacto
+    // nuevo aclarándolo, nunca se edita o borra el anterior.
+    match /{path=**}/contactos/{contactoId} {
+      allow read: if estaLogueado() && miRol() in ['captacion', 'gerencia'];
+      allow create: if estaLogueado() && miRol() == 'captacion';
+    }
   }
 }
