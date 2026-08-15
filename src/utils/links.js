@@ -45,3 +45,7 @@ export function linkWhatsapp(telefono) {
 export function linkLlamada(telefono) {
   return `tel:${soloDigitos(telefono)}`
 }
+
+export function linkMail(mail) {
+  return `mailto:${mail || ''}`
+}

@@ -1,10 +1,35 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { collectionGroup, onSnapshot, query, orderBy } from 'firebase/firestore'
+import { collectionGroup, collection, onSnapshot, query, orderBy } from 'firebase/firestore'
 import { db } from '../firebase'
 import { calcularPuntualidad } from '../utils/puntualidad'
+import { ESTADOS_INSTITUCION_POSITIVOS } from '../utils/constants'
 
 export default function GerenciaPage() {
+  const [vista, setVista] = useState('consultas')
+
+  return (
+    <div className="page">
+      <div className="page-header">
+        <h1>Panel de Gerencia</h1>
+        <p>Vista completa de consultas, estadísticas del servicio y captación institucional.</p>
+      </div>
+
+      <div className="filters-row" style={{ marginBottom: 24 }}>
+        <button type="button" className={`btn ${vista === 'consultas' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setVista('consultas')}>
+          Consultas a domicilio
+        </button>
+        <button type="button" className={`btn ${vista === 'captacion' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setVista('captacion')}>
+          Captación institucional
+        </button>
+      </div>
+
+      {vista === 'consultas' ? <VistaConsultas /> : <VistaCaptacion />}
+    </div>
+  )
+}
+
+function VistaConsultas() {
   const navigate = useNavigate()
   const [visitas, setVisitas] = useState([])
   const [filtroProfesional, setFiltroProfesional] = useState('')
@@ -36,12 +61,7 @@ export default function GerenciaPage() {
   const stats = useMemo(() => computarStats(filtradas), [filtradas])
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <h1>Panel de Gerencia</h1>
-        <p>Vista completa de consultas y estadísticas del servicio.</p>
-      </div>
-
+    <>
       <div className="stat-grid">
         <StatCard num={filtradas.length} label="Consultas totales" />
         <StatCard num={stats.pendientes} label="Pendientes" />
@@ -115,7 +135,116 @@ export default function GerenciaPage() {
           </div>
         )
       })}
-    </div>
+    </>
+  )
+}
+
+function VistaCaptacion() {
+  const navigate = useNavigate()
+  const [instituciones, setInstituciones] = useState([])
+  const [contactos, setContactos] = useState([])
+  const [filtroPrioridad, setFiltroPrioridad] = useState('')
+  const [filtroLocalidad, setFiltroLocalidad] = useState('')
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'instituciones'), (snap) => {
+      setInstituciones(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+    }, (err) => console.error('Error cargando instituciones:', err))
+    return unsub
+  }, [])
+
+  useEffect(() => {
+    // Sin orderBy ni where: un collectionGroup "a secas" no necesita índice
+    // compuesto, así que agrupamos y ordenamos todo del lado del cliente.
+    const unsub = onSnapshot(collectionGroup(db, 'contactos'), (snap) => {
+      setContactos(snap.docs.map((d) => ({ id: d.id, institucionId: d.ref.parent.parent.id, ...d.data() })))
+    }, (err) => console.error('Error cargando contactos:', err))
+    return unsub
+  }, [])
+
+  const localidadesUnicas = useMemo(
+    () => [...new Set(instituciones.map((i) => i.localidad).filter(Boolean))],
+    [instituciones]
+  )
+
+  const filtradas = useMemo(() => instituciones.filter((i) => {
+    if (filtroPrioridad && i.prioridad !== filtroPrioridad) return false
+    if (filtroLocalidad && i.localidad !== filtroLocalidad) return false
+    return true
+  }), [instituciones, filtroPrioridad, filtroLocalidad])
+
+  const idsFiltradas = useMemo(() => new Set(filtradas.map((i) => i.id)), [filtradas])
+  const contactosFiltrados = useMemo(
+    () => contactos.filter((c) => idsFiltradas.has(c.institucionId)),
+    [contactos, idsFiltradas]
+  )
+
+  const stats = useMemo(() => computarStatsCaptacion(filtradas, contactosFiltrados), [filtradas, contactosFiltrados])
+
+  return (
+    <>
+      <div className="stat-grid">
+        <StatCard num={filtradas.length} label="Instituciones" />
+        <StatCard num={stats.interesadas} label="Interesadas o con jornada" />
+        <StatCard num={stats.vencidas.length} label="Seguimientos vencidos" />
+        <StatCard num={stats.totalPotenciales} label="Pacientes potenciales estimados" />
+      </div>
+
+      <div className="card">
+        <h2 style={{ fontSize: '1.05rem', marginBottom: 14 }}>Instituciones por estado</h2>
+        <BarList datos={stats.porEstado} total={filtradas.length} />
+      </div>
+
+      <div className="card">
+        <h2 style={{ fontSize: '1.05rem', marginBottom: 14 }}>Instituciones por prioridad</h2>
+        <BarList datos={stats.porPrioridad} total={filtradas.length} />
+      </div>
+
+      <div className="card">
+        <h2 style={{ fontSize: '1.05rem', marginBottom: 14 }}>Instituciones por localidad</h2>
+        <BarList datos={stats.porLocalidad} total={filtradas.length} />
+      </div>
+
+      <div className="card">
+        <h2 style={{ fontSize: '1.05rem', marginBottom: 14 }}>Contactos registrados por mes</h2>
+        <BarList datos={stats.contactosPorMes} total={contactosFiltrados.length} />
+      </div>
+
+      <div className="card">
+        <h2 style={{ fontSize: '1.05rem', marginBottom: 14 }}>Pacientes potenciales estimados por estado</h2>
+        <BarList datos={stats.potencialesPorEstado} total={stats.totalPotenciales} />
+      </div>
+
+      <div className="page-header" style={{ marginTop: 10 }}>
+        <h1 style={{ fontSize: '1.15rem' }}>Instituciones</h1>
+      </div>
+
+      <div className="filters-row">
+        <select value={filtroPrioridad} onChange={(e) => setFiltroPrioridad(e.target.value)}>
+          <option value="">Todas las prioridades</option>
+          <option value="A">Prioridad A</option>
+          <option value="B">Prioridad B</option>
+        </select>
+        <select value={filtroLocalidad} onChange={(e) => setFiltroLocalidad(e.target.value)}>
+          <option value="">Todas las localidades</option>
+          {localidadesUnicas.map((l) => <option key={l} value={l}>{l}</option>)}
+        </select>
+      </div>
+
+      <h2 style={{ fontSize: '1rem', marginBottom: 10 }}>Seguimiento vencido ({stats.vencidas.length})</h2>
+      {stats.vencidas.length === 0 && <div className="empty-state">No hay seguimientos vencidos.</div>}
+      {stats.vencidas.map((i) => (
+        <div key={i.id} className="list-item" onClick={() => navigate(`/instituciones/${i.id}`)}>
+          <div className="li-main">
+            <strong>{i.nombre}</strong>
+            <div>
+              {i.localidad} · Prioridad {i.prioridad} · Próxima acción: {i.fechaProximaAccion.toDate().toLocaleDateString('es-AR')}
+            </div>
+          </div>
+          <span className="badge badge-pending">Vencida</span>
+        </div>
+      ))}
+    </>
   )
 }
 
@@ -176,4 +305,39 @@ function extraerZona(domicilio) {
   // Heurística simple: toma el último segmento separado por coma (suele ser la localidad/barrio).
   const partes = domicilio.split(',').map((p) => p.trim()).filter(Boolean)
   return partes.length > 1 ? partes[partes.length - 1] : domicilio
+}
+
+function computarStatsCaptacion(instituciones, contactos) {
+  const porEstado = {}
+  const porPrioridad = {}
+  const porLocalidad = {}
+  const potencialesPorEstado = {}
+  let interesadas = 0
+  let totalPotenciales = 0
+  const ahora = Date.now()
+
+  for (const i of instituciones) {
+    const estado = i.estadoActual || 'Sin contactar'
+    porEstado[estado] = (porEstado[estado] || 0) + 1
+    if (i.prioridad) porPrioridad[`Prioridad ${i.prioridad}`] = (porPrioridad[`Prioridad ${i.prioridad}`] || 0) + 1
+    if (i.localidad) porLocalidad[i.localidad] = (porLocalidad[i.localidad] || 0) + 1
+    if (ESTADOS_INSTITUCION_POSITIVOS.includes(estado)) interesadas++
+    if (i.pacientesPotencialesEstimados) {
+      totalPotenciales += i.pacientesPotencialesEstimados
+      potencialesPorEstado[estado] = (potencialesPorEstado[estado] || 0) + i.pacientesPotencialesEstimados
+    }
+  }
+
+  const vencidas = instituciones
+    .filter((i) => i.fechaProximaAccion?.toMillis && i.fechaProximaAccion.toMillis() <= ahora)
+    .sort((a, b) => a.fechaProximaAccion.toMillis() - b.fechaProximaAccion.toMillis())
+
+  const contactosPorMes = {}
+  for (const c of contactos) {
+    if (!c.fecha?.toDate) continue
+    const etiqueta = c.fecha.toDate().toLocaleDateString('es-AR', { month: 'short', year: 'numeric' })
+    contactosPorMes[etiqueta] = (contactosPorMes[etiqueta] || 0) + 1
+  }
+
+  return { porEstado, porPrioridad, porLocalidad, potencialesPorEstado, interesadas, totalPotenciales, vencidas, contactosPorMes }
 }

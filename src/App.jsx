@@ -7,6 +7,8 @@ import SecretariaPage from './pages/SecretariaPage'
 import ProfesionalPage from './pages/ProfesionalPage'
 import GerenciaPage from './pages/GerenciaPage'
 import HistoriaClinicaPage from './pages/HistoriaClinicaPage'
+import CaptacionPage from './pages/CaptacionPage'
+import InstitucionPage from './pages/InstitucionPage'
 
 function Shell({ children }) {
   return (
@@ -24,6 +26,7 @@ function InicioSegunRol() {
   if (usuario.rol === 'secretaria') return <Navigate to="/secretaria" replace />
   if (usuario.rol === 'profesional') return <Navigate to="/profesional" replace />
   if (usuario.rol === 'gerencia') return <Navigate to="/gerencia" replace />
+  if (usuario.rol === 'captacion') return <Navigate to="/captacion" replace />
   return (
     <div className="page">
       <div className="card">
@@ -66,6 +69,20 @@ export default function App() {
             <Shell>
               <ProtectedRoute rolesPermitidos={['secretaria', 'profesional', 'gerencia']}>
                 <HistoriaClinicaPage />
+              </ProtectedRoute>
+            </Shell>
+          } />
+          <Route path="/captacion" element={
+            <Shell>
+              <ProtectedRoute rolesPermitidos={['captacion']}>
+                <CaptacionPage />
+              </ProtectedRoute>
+            </Shell>
+          } />
+          <Route path="/instituciones/:id" element={
+            <Shell>
+              <ProtectedRoute rolesPermitidos={['captacion', 'gerencia']}>
+                <InstitucionPage />
               </ProtectedRoute>
             </Shell>
           } />

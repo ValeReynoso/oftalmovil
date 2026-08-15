@@ -4,6 +4,7 @@ const NOMBRE_ROL = {
   secretaria: 'Secretaría',
   gerencia: 'Gerencia',
   profesional: 'Profesional',
+  captacion: 'Captación Institucional',
 }
 
 export default function TopBar() {

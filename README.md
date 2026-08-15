@@ -1,8 +1,8 @@
 # OFTALMÓVIL — Sistema de gestión de consultas domiciliarias
 
 App web (React + Firebase) para coordinar y hacer seguimiento de las
-consultas oftalmológicas a domicilio, con 3 roles: Secretaría, Profesional
-y Gerencia.
+consultas oftalmológicas a domicilio, con 4 roles: Secretaría, Profesional,
+Gerencia y Captación Institucional.
 
 ## 1. Conectar tu proyecto de Firebase
 
@@ -45,7 +45,7 @@ pantalla haga esa consulta: Firestore te va a tirar en la consola del
 navegador un link que dice "para esta consulta hace falta un índice, hacé
 clic acá para crearlo" — cliqueás y esperás 1-2 minutos.
 
-## 4. Crear los primeros usuarios (Secretaría, Profesional, Gerencia)
+## 4. Crear los primeros usuarios (Secretaría, Profesional, Gerencia, Captación)
 
 Como decidimos que los usuarios se crean desde cero (no hay auto-registro),
 por ahora se cargan a mano desde la consola de Firebase. Para cada persona:
@@ -57,8 +57,8 @@ por ahora se cargan a mano desde la consola de Firebase. Para cada persona:
    Creá un documento con **ID = ese mismo UID**, y estos campos:
    - `nombre` (string): nombre visible, ej. "Dra. María Andrioli"
    - `email` (string): el mismo email del paso 1
-   - `rol` (string): `secretaria`, `profesional` o `gerencia` (todo en
-     minúscula, tal cual)
+   - `rol` (string): `secretaria`, `profesional`, `gerencia` o `captacion`
+     (todo en minúscula, tal cual)
 
 Repetí esto por cada persona que vaya a usar el sistema. Después puedo
 armarte una pantalla dentro de Gerencia para hacer esto sin entrar a la
@@ -84,11 +84,25 @@ pacientes/{dni}                → nombreApellido, dni, fechaNacimiento, domicil
                                   profesionalUid, profesionalNombre, estado (pendiente|realizada),
                                   resultadoVisita, resultadoObservacion,
                                   destinoPaciente, destinoDias, destinoDerivacion[],
-                                  creadoPor, fechaCreacion
+                                  horaInicioReal, creadoPor, fechaCreacion
+
+instituciones/{autoId}         → nombre, tipo, direccion, localidad, telefono, whatsapp, mail,
+                                  responsableInstitucion, prioridad (A|B),
+                                  estadoActual, proximaAccion, fechaProximaAccion,
+                                  pacientesPotencialesEstimados,
+                                  responsableCaptacionId, responsableCaptacionNombre,
+                                  creadoEn, actualizadoEn
+  └─ contactos/{autoId}        → fecha, tipoContacto, resultado, pacientesPotenciales,
+                                  proximoPaso, fechaProximaAccion, observaciones,
+                                  registradoPor, registradoPorNombre, creadoEn
 ```
 
 Cada paciente (identificado por DNI) tiene su ficha con historial de todas
-sus visitas, como una historia clínica.
+sus visitas, como una historia clínica. Cada institución sigue el mismo
+patrón: una ficha con historial completo de contactos (nunca se pisa el
+anterior, cada visita/llamada/mail queda como un registro nuevo), y el
+último contacto actualiza automáticamente `estadoActual`, `proximaAccion`,
+`fechaProximaAccion` y `pacientesPotencialesEstimados` en la institución.
 
 ## Qué falta / próximos pasos posibles
 
