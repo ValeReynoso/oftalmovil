@@ -4,6 +4,7 @@ import { doc, getDoc, collection, query, orderBy, onSnapshot } from 'firebase/fi
 import { db } from '../firebase'
 import { calcularEdad } from '../utils/age'
 import { generarConstanciaPDF } from '../utils/pdfConstancia'
+import PuntualidadInfo from '../components/PuntualidadInfo'
 
 export default function HistoriaClinicaPage() {
   const { dni } = useParams()
@@ -120,6 +121,7 @@ function VisitaCard({ visita }) {
       <div style={{ marginBottom: 8 }}>
         <strong>Profesional:</strong> {visita.profesionalNombre || '-'}
       </div>
+      <PuntualidadInfo visita={visita} />
 
       {visita.estado === 'realizada' ? (
         <>

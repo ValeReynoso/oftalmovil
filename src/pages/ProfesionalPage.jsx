@@ -7,6 +7,7 @@ import { calcularEdad } from '../utils/age'
 import { linkGoogleCalendar, linkGoogleMaps, linkWhatsapp, linkLlamada } from '../utils/links'
 import { generarConstanciaPDF } from '../utils/pdfConstancia'
 import { RESULTADOS_VISITA, DESTINOS_PACIENTE, OPCIONES_DERIVACION_CLINICA } from '../utils/constants'
+import PuntualidadInfo from '../components/PuntualidadInfo'
 
 export default function ProfesionalPage() {
   const { usuario } = useAuth()
@@ -95,11 +96,24 @@ function DetalleVisita({ visita, onVolver }) {
   const [derivacion, setDerivacion] = useState(visita.destinoDerivacion || [])
   const [guardando, setGuardando] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+  const [comenzando, setComenzando] = useState(false)
 
   const edad = calcularEdad(visita.pacienteFechaNacimiento)
 
   function toggleDerivacion(op) {
     setDerivacion((d) => (d.includes(op) ? d.filter((x) => x !== op) : [...d, op]))
+  }
+
+  async function comenzarVisita() {
+    setComenzando(true)
+    try {
+      await updateDoc(visita.ref, { horaInicioReal: serverTimestamp() })
+    } catch (err) {
+      console.error(err)
+      alert('No se pudo registrar el inicio de la visita. Probá de nuevo.')
+    } finally {
+      setComenzando(false)
+    }
   }
 
   async function guardarResultado(e) {
@@ -169,6 +183,13 @@ function DetalleVisita({ visita, onVolver }) {
             </button>
           )}
         </div>
+
+        {visita.estado === 'pendiente' && !visita.horaInicioReal && (
+          <button type="button" className="btn btn-accent" onClick={comenzarVisita} disabled={comenzando} style={{ marginTop: 14 }}>
+            {comenzando ? 'Registrando llegada...' : 'Comenzar'}
+          </button>
+        )}
+        <PuntualidadInfo visita={visita} />
       </div>
 
       <form className="card" onSubmit={guardarResultado}>

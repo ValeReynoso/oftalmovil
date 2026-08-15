@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { collectionGroup, onSnapshot, query, orderBy } from 'firebase/firestore'
 import { db } from '../firebase'
+import { calcularPuntualidad } from '../utils/puntualidad'
 
 export default function GerenciaPage() {
   const navigate = useNavigate()
@@ -87,27 +88,33 @@ export default function GerenciaPage() {
       </div>
 
       {filtradas.length === 0 && <div className="empty-state">No hay consultas que coincidan con los filtros.</div>}
-      {filtradas.map((v) => (
-        <div key={v.id} className="list-item" style={{ cursor: 'default' }}>
-          <div className="li-main">
-            <button
-              type="button"
-              className="patient-name-link"
-              onClick={() => navigate(`/pacientes/${v.pacienteDni}`)}
-              title="Ver historia clínica completa de este paciente"
-            >
-              {v.pacienteNombre}
-            </button>
-            <div>
-              {v.motivoConsulta} · Prof: {v.profesionalNombre} · {v.fechaHoraVisita?.replace('T', ' ')}
-              {v.estado === 'realizada' && v.resultadoVisita ? ` · ${v.resultadoVisita}` : ''}
+      {filtradas.map((v) => {
+        const puntualidad = calcularPuntualidad(v.fechaHoraVisita, v.horaInicioReal)
+        return (
+          <div key={v.id} className="list-item" style={{ cursor: 'default' }}>
+            <div className="li-main">
+              <button
+                type="button"
+                className="patient-name-link"
+                onClick={() => navigate(`/pacientes/${v.pacienteDni}`)}
+                title="Ver historia clínica completa de este paciente"
+              >
+                {v.pacienteNombre}
+              </button>
+              <div>
+                {v.motivoConsulta} · Prof: {v.profesionalNombre} · {v.fechaHoraVisita?.replace('T', ' ')}
+                {v.estado === 'realizada' && v.resultadoVisita ? ` · ${v.resultadoVisita}` : ''}
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {puntualidad && <span className={`badge ${puntualidad.clase}`}>{puntualidad.texto}</span>}
+              <span className={`badge ${v.estado === 'realizada' ? 'badge-done' : 'badge-pending'}`}>
+                {v.estado === 'realizada' ? 'Realizada' : 'Pendiente'}
+              </span>
             </div>
           </div>
-          <span className={`badge ${v.estado === 'realizada' ? 'badge-done' : 'badge-pending'}`}>
-            {v.estado === 'realizada' ? 'Realizada' : 'Pendiente'}
-          </span>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
